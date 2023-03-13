@@ -1,11 +1,11 @@
 const mongoose = require("mongoose");
 const express = require("express");
-const dotenv = require("dotenv");
+// const dotenv = require("dotenv");
 const path = require("path");
 const bodyParser = require("body-parser");
 require("./models/Post");
 require("./models/User");
-dotenv.config({ path: "config/.env" });
+// dotenv.config({ path: "config/.env" });
 const app = express();
 app.use(express.json());
 app.use(
