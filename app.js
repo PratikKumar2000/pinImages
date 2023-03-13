@@ -1,11 +1,11 @@
 const mongoose = require("mongoose");
 const express = require("express");
-// const dotenv = require("dotenv");
+const dotenv = require("dotenv");
 const path = require("path");
 const bodyParser = require("body-parser");
 require("./models/Post");
 require("./models/User");
-// dotenv.config({ path: "config/.env" });
+dotenv.config({ path: "config/.env" });
 const app = express();
 app.use(express.json());
 app.use(
@@ -20,11 +20,12 @@ app.use(require("./routes/post"));
 app.use(require("./routes/user"));
 
 //static files
+console.log(__dirname);
 
-app.use(express.static(path.join(__dirname, "./client/build")));
+app.use(express.static(path.join(__dirname, "client/build")));
 
 app.get("*", function (req, res) {
-  res.sendFile(path.join(__dirname, "./client/build/index.html"));
+  res.sendFile(path.join(__dirname, "client/build/index.html"));
 });
 
 mongoose
