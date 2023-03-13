@@ -15,18 +15,17 @@ app.use(
 );
 app.use(bodyParser.json());
 
-
 app.use(require("./routes/auth"));
 app.use(require("./routes/post"));
 app.use(require("./routes/user"));
 
 //static files
 
-app.use(express.static(path.join(__dirname, "./frontend/pininterest/build")));
+app.use(express.static(path.join(__dirname, "./client/build")));
 
-app.get("*", function (req, res){
-  res.sendFile(path.joinFile(__dirname, "./frontend/pininterest/build/index.html"));
-})
+app.get("*", function (req, res) {
+  res.sendFile(path.joinFile(__dirname, "./client/build/index.html"));
+});
 
 mongoose
   .connect(process.env.MONGOURL, {
