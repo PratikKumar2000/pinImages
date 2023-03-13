@@ -24,7 +24,7 @@ app.use(require("./routes/user"));
 
 app.use(express.static(path.join(__dirname, "./frontend/pininterest/build")));
 
-app.get("*", function (err, req){
+app.get("*", function (req, res){
   res.sendFile(path.joinFile(__dirname, "./frontend/pininterest/build/index.html"));
 })
 
