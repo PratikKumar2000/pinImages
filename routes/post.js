@@ -75,7 +75,7 @@ router.get("/post/:postid", async (req, res) => {
     const id = req.params.postid;
     const result = await Post.findById({ _id: id })
       .populate("postedBy", "_id name")
-      .populate("comments.postedBy", "_id name");
+      .populate("comments.postedBy", "_id name pic");
     res.json({ post: result });
   } catch (error) {
     res.json({ error: "Error while fetching the post" });
