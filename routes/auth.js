@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 const User = mongoose.model("User");
 const crypto = require("crypto");
 const bcrypt = require("bcryptjs");
@@ -13,6 +13,9 @@ router.post("/signup", (req, res) => {
   const { name, email, password, pic } = req.body;
   if (!email || !password || !name) {
     return res.status(422).json({ error: "please add all the fields" });
+  }
+  if (password.length < 6) {
+    res.json({ error: "Password must be of 6 characters" });
   }
   User.findOne({ email: email })
     .then((savedUser) => {
@@ -30,7 +33,6 @@ router.post("/signup", (req, res) => {
           role: "User",
           condition: "Unblock",
         });
-
         user
           .save()
           .then((user) => {
@@ -63,11 +65,12 @@ router.post("/signin", (req, res) => {
             { _id: savedUser._id },
             process.env.JWT_SECRET
           );
-            const { _id, name, email, pic, role, condition } = savedUser;
-            if (condition === "block") {
-                return res.json({
-                    error: "Sorry,Your account has been blocked" });
-            }
+          const { _id, name, email, pic, role, condition } = savedUser;
+          if (condition === "block") {
+            return res.json({
+              error: "Sorry,Your account has been blocked",
+            });
+          }
           res.json({
             token,
             user: { _id, name, email, pic, role, condition },
@@ -107,58 +110,58 @@ router.post("/resetpassword", (req, res) => {
                     <p>You requested for password reset</p>
                     <h5>click on this <a href="${req.protocol}://${req.get(
               "host"
-            )}/reset/${resetToken}">link</a> to reset password</h5>
+            )}/reset/${user.resetToken}">link</a> to reset password</h5>
                     `,
           };
+
           sgMail
             .send(message)
             .then((response) => console.log(response))
-            .catch((err) => console.log(err));
+            .catch((err) => res.json({ error: err }));
           res.status(200).json({ message: "check your email" });
         })
         .catch((err) => {
           user.resetToken = undefined;
           user.expireToken = undefined;
           user.save({ validateBeforeSave: false });
-          return res.status(500).json(err);
+          return res.status(500).json({ error: err });
         });
     });
   });
 });
 
-
 router.route("/reset/:token").put(async (req, res) => {
-    try {
-         const token = req.params.token;
-         const resetPasswordToken = crypto
-           .createHash("sha256")
-           .update(token)
-           .digest("hex");
-         const user = await User.findOne({
-           resetToken: resetPasswordToken,
-           expireToken: { $gt: Date.now() },
-         });
-         if (!user) {
-           return res.status(422).json({
-             error: "Try again session expired or invalid reset password token",
-           });
-         }
-         if (req.body.password !== req.body.confirmPassword) {
-           return res.status(400).json({ error: "Password does not match" });
-         }
-         bcrypt.hash(req.body.password, 12).then((hashedpassword) => {
-           user.password = hashedpassword;
-           user.resetToken = undefined;
-           user.expireToken = undefined;
-           user.save({ validateBeforeSave: false }).then((saveduser) => {
-             res
-               .status(200)
-               .json({ message: "password updated success", saveduser });
-           });
-         });
-    } catch (err) {
-        console.log(err);
+  try {
+    const token = req.params.token;
+    const resetPasswordToken = crypto
+      .createHash("sha256")
+      .update(token)
+      .digest("hex");
+    const user = await User.findOne({
+      resetToken: resetPasswordToken,
+      expireToken: { $gt: Date.now() },
+    });
+    if (!user) {
+      return res.status(422).json({
+        error: "Try again session expired or invalid reset password token",
+      });
     }
+    if (req.body.password !== req.body.confirmPassword) {
+      return res.status(400).json({ error: "Password does not match" });
+    }
+    bcrypt.hash(req.body.password, 12).then((hashedpassword) => {
+      user.password = hashedpassword;
+      user.resetToken = undefined;
+      user.expireToken = undefined;
+      user.save({ validateBeforeSave: false }).then((saveduser) => {
+        res
+          .status(200)
+          .json({ message: "password updated success", saveduser });
+      });
+    });
+  } catch (err) {
+    console.log(err);
+  }
 });
 
 module.exports = router;

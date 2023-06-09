@@ -10,10 +10,10 @@ router.get("/allpost", (req, res) => {
     .populate("comments.postedBy", "_id name")
     .sort("-createdAt")
     .then((posts) => {
-      res.json({posts});
+      res.json({ posts });
     })
     .catch((err) => {
-      res.json({error : err});
+      res.json({ error: err });
     });
 });
 
@@ -48,12 +48,14 @@ router.put("/editpost", requireLogin, async (req, res) => {
       return res.status(422).json({ error: "Plase add all the fields" });
     }
     const post = await Post.findById(postId);
-    post.title = title; post.body = body; post.photo = pic;
-    const result = await post.save()
+    post.title = title;
+    post.body = body;
+    post.photo = pic;
+    const result = await post.save();
     res.json({ post: result });
   } catch (err) {
     console.log(err);
- }
+  }
 });
 
 router.get("/mypost", requireLogin, (req, res) => {
@@ -68,17 +70,16 @@ router.get("/mypost", requireLogin, (req, res) => {
     });
 });
 
-router.get("/post/:postid", requireLogin, (req, res) => {
-  const id = req.params.postid;
-  Post.find({ id })
-    .populate("postedBy", "_id name")
-    .populate("comments.postedBy", "_id name")
-    .then((post) => {
-      res.json({ post });
-    })
-    .catch((err) => {
-      console.log(err);
-    });
+router.get("/post/:postid", async (req, res) => {
+  try {
+    const id = req.params.postid;
+    const result = await Post.findById({ _id: id })
+      .populate("postedBy", "_id name")
+      .populate("comments.postedBy", "_id name");
+    res.json({ post: result });
+  } catch (error) {
+    res.json({ error: "Error while fetching the post" });
+  }
 });
 
 router.put("/like", requireLogin, async (req, res) => {
@@ -133,13 +134,12 @@ router.put("/comment", requireLogin, async (req, res) => {
           comm.text = req.body.text;
         }
       });
-    } else {
-      post.comments.push(comment);
-    }
+    } else post.comments.push(comment);
     const pos = await post.save();
     const result = await Post.findById(req.body.postId)
       .populate("postedBy", "_id name")
       .populate("comments.postedBy", "_id name");
+
     res.status(200).json(result);
   } catch (err) {
     console.log(err);
@@ -149,8 +149,8 @@ router.put("/comment", requireLogin, async (req, res) => {
 router.route("/deleteComment").put(requireLogin, async (req, res) => {
   try {
     const id = req.user._id;
-  const { postId } = req.body;
-  const post = await Post.findOne({ _id: postId });
+    const { postId } = req.body;
+    const post = await Post.findOne({ _id: postId });
     if (!post) {
       return res.status(404).json({ error: "post not found" });
     }
@@ -162,13 +162,12 @@ router.route("/deleteComment").put(requireLogin, async (req, res) => {
       }
     });
     post.comments = newCommentArr;
-    await post.save()
+    await post.save();
     const result = await Post.findById(req.body.postId)
       .populate("postedBy", "_id name")
       .populate("comments.postedBy", "_id name");
     res.status(200).json(result);
-  }
-  catch (err) {
+  } catch (err) {
     console.log(err);
   }
 });
@@ -181,8 +180,7 @@ router.delete("/deletepost/:postId", requireLogin, (req, res) => {
         return res.status(422).json({ error: err });
       }
       if (post.postedBy._id.toString() === req.user._id.toString()) {
-        Post
-          .deleteOne({_id : req.params.postId })
+        Post.deleteOne({ _id: req.params.postId })
           .then((result) => {
             res.json(result);
           })
@@ -190,7 +188,8 @@ router.delete("/deletepost/:postId", requireLogin, (req, res) => {
             console.log(err);
           });
       }
-    }).catch(err => console.log(err));
+    })
+    .catch((err) => console.log(err));
 });
 
 router
@@ -250,27 +249,17 @@ router
   });
 
 router.delete(
-  "moderator/deletepost/:postId",
+  "/moderator/deletepost/:postId",
   requireLogin,
   moderator("User"),
-  (req, res) => {
-    Post.findOne({ _id: req.params.postId })
-      .populate("postedBy", "_id")
-      .exec((err, post) => {
-        if (err || !post) {
-          return res.status(422).json({ error: err });
-        }
-        post
-          .remove()
-          .then((result) => {
-            res.json(result);
-          })
-          .catch((err) => {
-            console.log(err);
-          });
-      });
+  async (req, res) => {
+    try {
+      await Post.deleteOne({ _id: req.params.postId });
+      res.json({ message: "Deleted the post successfully" });
+    } catch (error) {
+      res.json({ error: error });
+    }
   }
 );
-
 
 module.exports = router;
